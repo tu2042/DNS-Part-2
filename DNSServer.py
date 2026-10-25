@@ -32,7 +32,7 @@ def generate_aes_key(password, salt):
 
 # Lookup details on fernet in the cryptography.io documentation    
 def encrypt_with_aes(input_string, password, salt):
-    key = generate_aes_key(password, salt)
+    key = generate_aes_key(password,salt)
     f = Fernet(key)
     encrypted_data = f.encrypt(input_string.encode('utf-8')) #call the Fernet encrypt method
     return encrypted_data    
@@ -43,13 +43,12 @@ def decrypt_with_aes(encrypted_data, password, salt):
     decrypted_data = f.decrypt(encrypted_data) #call the Fernet decrypt method
     return decrypted_data.decode('utf-8')
 
-salt = b'Tandon'  # Remember it should be a byte-object
+salt = b'Tandon' # Remember it should be a byte-object
 password = 'tu2042@nyu.edu'
 input_string = 'AlwaysWatching'
 
 encrypted_value = encrypt_with_aes(input_string, password, salt) # exfil function
 decrypted_value = decrypt_with_aes(encrypted_value, password, salt)  # exfil function
-print("Decrypted value:", decrypted_value)
 # For future use    
 def generate_sha256_hash(input_string):
     sha256_hash = hashlib.sha256()
@@ -90,20 +89,13 @@ dns_records = {
     },
     'nyu.edu.': {
         dns.rdatatype.A: '192.168.1.106',
-        dns.rdatatype.TXT: encrypted_value,
+        dns.rdatatype.TXT: encrypted_value.decode('utf-8'),
         dns.rdatatype.MX: [(10, 'mxa-00256a01.gslb.pphosted.com.')],
         dns.rdatatype.AAAA: '2001:0db8:85a3:0000:0000:8a2e:0373:7312',
         dns.rdatatype.NS: 'ns1.nyu.edu.',
-        dns.rdatatype.SOA: (
-            'ns1.nyu.edu.',
-            'admin.nyu.edu.',
-            2023081401,
-            3600,
-            1800,
-            604800,
-            86400
-        ),
     },
+
+    # Add more records as needed (see assignment instructions!
 }
 
 def run_dns_server():
@@ -139,16 +131,14 @@ def run_dns_server():
                     mname, rname, serial, refresh, retry, expire, minimum = answer_data # What is the record format? See dns_records dictionary. Assume we handle @, Class, TTL elsewhere. Do some research on SOA Records
                     rdata = SOA(dns.rdataclass.IN, dns.rdatatype.SOA, mname, rname, serial, refresh, retry, expire, minimum) # follow format from previous line
                     rdata_list.append(rdata)
-
                 elif qtype == dns.rdatatype.TXT:
                     rdata_list.append(
                         dns.rdata.from_text(
                             dns.rdataclass.IN,
                             dns.rdatatype.TXT,
-                            f'"{answer_data.decode("utf-8")}"'
+                            '"' + answer_data + '"'
                         )
                     )
-
                 else:
                     if isinstance(answer_data, str):
                         rdata_list = [dns.rdata.from_text(dns.rdataclass.IN, qtype, answer_data)]
